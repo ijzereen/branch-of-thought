@@ -16,7 +16,11 @@ Editing a message quietly starts a new branch, and the old thread gets buried be
 
 </div>
 
-> _Drop a GIF here. A 5-second clip of the graph in action does the rest._
+<div align="center">
+
+![Branch of Thought in action](capture.gif)
+
+</div>
 
 ---
 
