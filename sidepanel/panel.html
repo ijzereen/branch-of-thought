@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Branch of Thought</title>
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <header id="toolbar">
+      <div class="title">
+        <span class="dot"></span>
+        Branch of Thought
+      </div>
+      <div class="stats" id="stats"></div>
+      <button id="fit" title="화면에 맞추기">⤢</button>
+      <button id="reset" title="레이아웃 초기화 (자동 배치로)">↺</button>
+      <div class="menu">
+        <button id="export-btn" title="내보내기">⤓</button>
+        <div class="menu-list" id="export-menu" hidden>
+          <button id="export-html">HTML (인터랙티브)</button>
+          <button id="export-png">PNG 이미지</button>
+          <button id="export-svg">SVG 벡터</button>
+        </div>
+      </div>
+      <button id="settings" title="설정 (API 키)">⚙︎</button>
+    </header>
+
+    <div id="empty" class="empty">
+      <p><b>대화 트리를 기다리는 중…</b></p>
+      <p>
+        <b>Claude</b> 또는 <b>ChatGPT</b> 탭에서 대화를 열거나 새로고침(⌘R)하면
+        여기에 브랜치 그래프가 나타납니다.
+      </p>
+      <p class="hint">
+        메시지를 편집할 때마다 새 가지가 생기고, 현재 활성 경로가 굵게 강조됩니다.
+        (Gemini는 API 구조상 아직 미지원)
+      </p>
+    </div>
+
+    <div id="graph-wrap" hidden>
+      <svg id="graph" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <aside id="detail" hidden>
+      <div id="detail-resize" title="위아래로 드래그해서 크기 조절"></div>
+      <div class="detail-head">
+        <span id="detail-sender" class="badge"></span>
+        <span id="detail-time"></span>
+        <button id="detail-max" title="크게 / 원래대로">⤢</button>
+        <button id="detail-close">✕</button>
+      </div>
+      <div id="detail-scroll">
+        <div id="detail-question" hidden>
+          <div class="q-label" id="detail-question-label">질문</div>
+          <div id="detail-question-text" class="md"></div>
+        </div>
+        <div id="detail-text" class="md"></div>
+      </div>
+    </aside>
+
+    <script src="panel.js"></script>
+  </body>
+</html>

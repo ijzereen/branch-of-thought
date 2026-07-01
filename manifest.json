@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Branch of Thought",
+  "version": "0.2.0",
+  "description": "Claude·ChatGPT 대화에서 메시지 편집으로 갈라지는 브랜치 구조를 트리 그래프로 시각화합니다.",
+  "permissions": ["sidePanel", "tabs", "storage"],
+  "host_permissions": [
+    "https://claude.ai/*",
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://gemini.google.com/*",
+    "https://api.anthropic.com/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "action": {
+    "default_title": "Branch of Thought 열기"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/panel.html"
+  },
+  "options_page": "options/options.html",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://claude.ai/*",
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://gemini.google.com/*"
+      ],
+      "js": ["src/interceptor.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://claude.ai/*",
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://gemini.google.com/*"
+      ],
+      "js": ["src/content.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED"
+    }
+  ]
+}
