@@ -255,6 +255,27 @@
     );
   }
 
+  // The send request is a streaming (SSE) response — it stays open until the
+  // reply is fully generated. Reading a clone of the stream to completion lets
+  // us refetch the tree the moment the answer actually exists, instead of
+  // guessing with fixed timers (which can fire before a slow reply is saved).
+  function refetchAfterStream(res, explicitId) {
+    try {
+      if (!res || !res.body || !res.body.getReader) return;
+      const reader = res.clone().body.getReader();
+      const pump = () =>
+        reader.read().then(({ done }) => {
+          if (done) {
+            fireRefetch(explicitId); // right when streaming ends
+            setTimeout(() => fireRefetch(explicitId), 1500); // after it's saved
+            return;
+          }
+          return pump();
+        });
+      pump().catch(() => {});
+    } catch (_) {}
+  }
+
   window.fetch = function (...args) {
     const p = origFetch.apply(this, args);
     p.then((res) => {
@@ -262,10 +283,16 @@
         const url =
           (args[0] && args[0].url) || (typeof args[0] === "string" ? args[0] : res.url);
         noteOrg(url);
-        // a message was just sent → pull the fresh tree
+        // a message was just sent → pull the fresh tree (early guess for a
+        // snappy update, plus a guaranteed refetch when the stream finishes)
         const claudeSend = /chat_conversations\/([0-9a-f-]+)\/completion/.exec(url || "");
-        if (claudeSend) scheduleRefetch(claudeSend[1]);
-        else if (/\/backend-api\/(f\/)?conversation$/.test(url || "")) scheduleRefetch();
+        if (claudeSend) {
+          scheduleRefetch(claudeSend[1]);
+          refetchAfterStream(res, claudeSend[1]);
+        } else if (/\/backend-api\/(f\/)?conversation$/.test(url || "")) {
+          scheduleRefetch();
+          refetchAfterStream(res);
+        }
         if (!isConvUrl(url)) return;
         const ct = (res.headers && res.headers.get && res.headers.get("content-type")) || "";
         if (!/json/i.test(ct)) return;
