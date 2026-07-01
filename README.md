@@ -1,157 +1,163 @@
-# Branch of Thought
+<div align="center">
 
-**See the hidden shape of your AI conversations.**
+# 🌿 Branch of Thought
 
-English · [한국어](#한국어)
+### Your AI chats are secretly trees. See the whole forest.
+
+Edit a message in Claude or ChatGPT and it doesn't overwrite — it **forks**.
+Branch of Thought maps every hidden branch as a live, git-style graph, right in a side panel.
+
+![License](https://img.shields.io/badge/License-MIT-1c1c1a?style=flat-square)
+![Chrome MV3](https://img.shields.io/badge/Chrome-MV3-1c1c1a?style=flat-square&logo=googlechrome&logoColor=white)
+![Claude](https://img.shields.io/badge/Claude-supported-d97757?style=flat-square)
+![ChatGPT](https://img.shields.io/badge/ChatGPT-supported-10a37f?style=flat-square)
+![Build](https://img.shields.io/badge/build-none-1c1c1a?style=flat-square)
+
+**English** · [한국어](#-한국어)
+
+</div>
+
+> 📸 _Drop a GIF here — a 5-second clip of the tree lighting up sells the whole thing._
 
 ---
-
-Edit a message in Claude or ChatGPT and it isn't overwritten — it *forks*. The old exchange is still there, alive on a branch you can't see anymore. Do that a few times and your "conversation" is quietly a tree, and you're standing on one leaf of it with no map.
-
-Branch of Thought draws the map. It's a Chrome side panel that reads the conversation your browser already loaded, rebuilds every branch, and shows the whole thing like a git graph: which turn you're on, where it split, and what's down the paths you walked away from.
-
-> 📸 _Add a screenshot or short GIF here — it does most of the selling._
 
 ## Why
 
-I do long research chats and I edit prompts constantly to steer the model. More than once the answer I actually wanted was three edits back, sitting on a branch I could no longer find. The web UI gives you a tiny `‹ 2/3 ›` arrow and nothing else. I wanted the whole tree, so I built it.
+Long research chats mean editing prompts constantly to steer the model. Half the time the answer I actually wanted was three edits back, on a branch I could no longer find. The web UI gives you a tiny `‹ 2/3 ›` arrow and nothing else. I wanted the whole tree — so here it is.
 
-## What it does
+## What you get
 
-- Rebuilds the full branch tree and highlights the path you're currently on.
-- Click a node to read the full message (rendered as Markdown) **plus the turn that caused it** — click an answer, see its question; click a question, see the answer before it.
-- Click a node to re-route the highlighted path *through it*, so you can trace any branch, not just the live one.
-- Drag nodes to tidy the layout. It remembers where you put them, per conversation.
-- Optional short titles on each node, written by Claude Haiku, so you can skim the tree instead of reading raw text off every dot.
-- Export the graph as a self-contained interactive HTML file, a PNG, or an SVG.
+- **The whole tree.** Every fork from every edit, with your current path lit up.
+- **Click to read.** Full message in Markdown — *plus the turn that caused it* (answer ↔ question).
+- **Click to re-route.** Send the highlighted path through any node and trace branches you'd abandoned.
+- **Draggable.** Tidy the layout by hand; positions stick per conversation.
+- **Skimmable.** Optional one-line node titles, written by Claude Haiku.
+- **Exportable.** Interactive HTML, PNG, or SVG.
 
-## Supported platforms
+## Platforms
 
-| Platform | Status | Notes |
+| | Status | Notes |
 |---|---|---|
-| **Claude** — claude.ai | ✅ works | full branch tree |
-| **ChatGPT** — chatgpt.com | ✅ works | rebuilt from the `mapping` tree, system/tool nodes folded out |
+| **Claude** · claude.ai | ✅ | full branch tree |
+| **ChatGPT** · chatgpt.com | ✅ | rebuilt from the `mapping` tree |
 
-Both platforms are folded into one internal shape by a normalizer, so the graph, the detail view, and the exporters don't care where the data came from.
+One normalizer folds both into the same shape, so everything downstream is platform-agnostic.
 
-## Install
+## Install · 60 seconds
 
-It's not on the Chrome Web Store and won't be — just grab it from here and load it unpacked:
+Not on the Web Store, never will be. Grab it here:
 
-1. `git clone https://github.com/ijzereen/branch-of-thought`
-2. Go to `chrome://extensions`
-3. Turn on **Developer mode** (top-right)
-4. **Load unpacked** → select the cloned folder
-5. Open Claude or ChatGPT and click the toolbar icon to open the side panel
+```bash
+git clone https://github.com/ijzereen/branch-of-thought
+```
 
-## Using it
+Then: `chrome://extensions` → **Developer mode** on → **Load unpacked** → pick the folder.
+Open Claude or ChatGPT, click the toolbar icon, done.
 
-Open a conversation and the graph shows up. If you just edited or sent a message, refresh the page (⌘R / Ctrl-R) — the extension reads the tree when the page loads it, so a brand-new turn won't appear until the next load.
+## Controls
 
-| Action | How |
+| | |
 |---|---|
 | Pan / zoom | drag empty space / scroll |
+| Move a node | drag it · **↺** resets |
+| Read a message | click a node |
 | Fit to screen | **⤢** |
-| Move a node | drag it |
-| Reset layout | **↺** |
-| Select a node (re-route path + read message) | click it |
-| Resize the detail popup | drag its top handle, or **⤢** on it |
+| Resize the reader | drag its top handle |
 | Export | **⤓** → HTML / PNG / SVG |
 | Settings | **⚙︎** |
 
-## Node titles with Haiku (optional)
+> Just edited or sent a message? Refresh the tab — the graph reads the tree on page load.
 
-Out of the box, node labels are just the message text, trimmed. Drop in an Anthropic API key (**⚙︎ → settings**) and each node gets a short AI-written title instead.
+## Titles by Haiku · optional
 
-It's built to be cheap: only the active path is summarized up front, and other branches are summarized the moment you hover them. Messages never change, so each one is summarized exactly once and cached forever. You pay a few cents the first time you open a conversation and nothing after.
+Node labels are raw text by default. Add an Anthropic API key (**⚙︎ → settings**) and each node gets a crisp one-line title instead.
 
-Your key and the summaries stay in your browser (`chrome.storage.local`).
+Cheap by design: only the active path is summarized up front, the rest on hover. Messages never change, so each is summarized once and cached forever — a few cents on first open, free after. Key and summaries live in your browser.
 
 ## Privacy
 
-Your conversations never leave the browser. The extension only reads API responses the page already fetched, builds the graph locally, and keeps layout and titles in local storage. No servers, no analytics, no telemetry.
-
-The single exception is the optional Haiku summarization, which sends message text to `api.anthropic.com` using *your* key — and only if you turn it on.
+Nothing leaves your machine. Branch of Thought reads responses your browser already fetched and builds the graph locally — no servers, no analytics, no telemetry. The one exception: if you turn on Haiku titles, message text goes to `api.anthropic.com` with *your* key.
 
 ## License
 
-[MIT](LICENSE). Do what you want with it.
+[MIT](LICENSE) — do whatever you want.
+
+<br>
 
 ---
 
-# 한국어
+<div align="center">
 
-**AI 대화의 숨은 구조를 눈으로.**
+# 🌿 한국어
 
-[English](#branch-of-thought) · 한국어
+### 당신의 AI 대화는 사실 나무입니다. 숲 전체를 보세요.
+
+Claude나 ChatGPT에서 메시지를 편집하면 덮어써지는 게 아니라 **가지가 갈라집니다.**
+Branch of Thought는 그 숨은 가지들을 git 그래프처럼, 사이드패널에서 실시간으로 그려줍니다.
+
+[English](#-branch-of-thought) · **한국어**
+
+</div>
 
 ---
 
-Claude나 ChatGPT에서 메시지를 편집하면 덮어써지는 게 아니라 **가지가 갈라집니다(fork).** 이전 대화는 사라지지 않고, 더는 보이지 않는 가지 위에 그대로 살아 있어요. 몇 번 편집하다 보면 당신의 "대화"는 어느새 한 그루 나무가 되고, 당신은 지도도 없이 그 잎사귀 하나 위에 서 있게 됩니다.
+## 왜
 
-Branch of Thought는 그 지도를 그려줍니다. 브라우저가 이미 불러온 대화를 읽어 모든 가지를 복원하고, git 그래프처럼 전체를 보여줘요. 지금 어느 지점에 있는지, 어디서 갈라졌는지, 두고 온 길 끝엔 뭐가 있었는지까지.
+긴 리서치 채팅에선 모델을 유도하려고 프롬프트를 끝없이 고칩니다. 정작 원하던 답은 세 편집 전, 이제 못 찾는 가지 위에 있기 일쑤죠. 웹 UI가 주는 건 조그만 `‹ 2/3 ›` 화살표 하나뿐. 나무 전체가 보고 싶어서 만들었습니다.
 
-## 왜 만들었나
+## 뭘 해주냐면
 
-긴 리서치 채팅을 하면서 모델을 유도하려고 프롬프트를 수없이 고칩니다. 정작 원했던 답이 세 편집 전, 이제는 찾을 수 없는 가지 위에 있던 적이 한두 번이 아니었어요. 웹 UI가 주는 건 조그만 `‹ 2/3 ›` 화살표 하나가 전부죠. 나무 전체가 보고 싶어서 직접 만들었습니다.
+- **나무 전체.** 편집마다 갈라진 모든 가지, 현재 경로는 밝게.
+- **클릭해서 읽기.** 전문을 마크다운으로 — *그 turn을 만든 상대 메시지까지* (답변 ↔ 질문).
+- **클릭해서 경로 전환.** 강조 경로를 아무 노드로나 돌려, 버려뒀던 가지도 추적.
+- **드래그.** 손으로 배치 정리, 위치는 대화별로 유지.
+- **훑어보기.** Claude Haiku가 달아주는 한 줄 노드 제목 (선택).
+- **내보내기.** 인터랙티브 HTML, PNG, SVG.
 
-## 기능
+## 플랫폼
 
-- 전체 브랜치 트리를 복원하고 지금 있는 경로를 강조합니다.
-- 노드를 클릭하면 전문을 **마크다운으로** 보여주고, **그 turn을 만든 상대 메시지**도 함께 뜹니다 — 답변을 누르면 질문이, 질문을 누르면 직전 답변이.
-- 노드를 클릭하면 활성 경로가 *그 노드를 지나가도록* 다시 그려져, 살아 있는 경로뿐 아니라 아무 가지나 따라갈 수 있어요.
-- 노드를 드래그해 정리할 수 있고, 옮긴 위치는 대화별로 기억됩니다.
-- (선택) Claude Haiku가 각 노드에 짧은 제목을 달아줘, 점마다 원문을 읽지 않고 훑어볼 수 있어요.
-- 그래프를 그 자체로 동작하는 인터랙티브 HTML / PNG / SVG로 내보냅니다.
-
-## 지원 플랫폼
-
-| 플랫폼 | 상태 | 비고 |
+| | 상태 | 비고 |
 |---|---|---|
-| **Claude** — claude.ai | ✅ 지원 | 브랜치 트리 완전 지원 |
-| **ChatGPT** — chatgpt.com | ✅ 지원 | `mapping` 트리에서 복원, 시스템/툴 노드는 정리 |
+| **Claude** · claude.ai | ✅ | 브랜치 트리 완전 지원 |
+| **ChatGPT** · chatgpt.com | ✅ | `mapping` 트리에서 복원 |
 
-두 플랫폼을 하나의 정규화기가 공통 형태로 접어 넣기 때문에, 그래프·상세·내보내기는 데이터 출처를 신경 쓰지 않습니다.
+정규화기 하나가 둘을 같은 형태로 접어 넣어, 그 아래는 전부 플랫폼 무관하게 동작합니다.
 
-## 설치
+## 설치 · 60초
 
-크롬 웹스토어엔 없고 앞으로도 올릴 계획 없어요 — 여기서 받아서 압축 해제 상태로 로드하세요:
+웹스토어엔 없고, 앞으로도 없습니다. 여기서 받으세요:
 
-1. `git clone https://github.com/ijzereen/branch-of-thought`
-2. `chrome://extensions` 접속
-3. 우측 상단 **개발자 모드** 켜기
-4. **압축해제된 확장 프로그램을 로드** → 클론한 폴더 선택
-5. Claude나 ChatGPT를 열고 툴바 아이콘을 눌러 사이드패널 열기
+```bash
+git clone https://github.com/ijzereen/branch-of-thought
+```
 
-## 사용법
+그다음: `chrome://extensions` → **개발자 모드** 켜기 → **압축해제된 확장 프로그램을 로드** → 폴더 선택.
+Claude나 ChatGPT 열고 툴바 아이콘 클릭, 끝.
 
-대화를 열면 그래프가 나타납니다. 방금 편집하거나 메시지를 보냈다면 페이지를 새로고침(⌘R)하세요 — 확장은 페이지가 트리를 불러올 때 읽으므로, 새 메시지는 다음 로드 때 반영됩니다.
+## 조작
 
-| 동작 | 방법 |
+| | |
 |---|---|
 | 이동 / 확대·축소 | 빈 곳 드래그 / 스크롤 |
+| 노드 이동 | 드래그 · **↺** 초기화 |
+| 메시지 읽기 | 노드 클릭 |
 | 화면 맞춤 | **⤢** |
-| 노드 이동 | 드래그 |
-| 레이아웃 초기화 | **↺** |
-| 노드 선택(경로 재설정 + 전문 보기) | 클릭 |
-| 상세 팝업 크기 조절 | 상단 손잡이 드래그 또는 팝업의 **⤢** |
+| 리더 크기 조절 | 상단 손잡이 드래그 |
 | 내보내기 | **⤓** → HTML / PNG / SVG |
 | 설정 | **⚙︎** |
 
-## Haiku 제목 요약 (선택)
+> 방금 편집·전송했다면? 탭을 새로고침하세요 — 그래프는 페이지 로드 때 트리를 읽습니다.
 
-기본 노드 라벨은 메시지 원문을 자른 것입니다. Anthropic API 키를 넣으면(**⚙︎ → 설정**) 각 노드에 짧은 AI 제목이 붙어요.
+## Haiku 제목 · 선택
 
-저렴하게 설계했습니다: 처음엔 활성 경로만 요약하고, 나머지 가지는 마우스를 올리는 순간 요약합니다. 메시지는 바뀌지 않으니 한 번만 요약하고 영구 캐시돼요. 대화를 처음 열 때 몇 센트, 그 뒤론 무료입니다.
+기본 라벨은 원문 그대로입니다. Anthropic API 키를 넣으면(**⚙︎ → 설정**) 각 노드에 깔끔한 한 줄 제목이 붙어요.
 
-키와 요약 결과는 브라우저(`chrome.storage.local`) 안에만 저장됩니다.
+저렴하게 설계: 처음엔 활성 경로만, 나머지는 마우스 올릴 때 요약. 메시지는 안 바뀌니 한 번만 요약하고 영구 캐시 — 첫 오픈에 몇 센트, 이후 무료. 키와 요약은 브라우저 안에만.
 
 ## 프라이버시
 
-대화는 브라우저를 벗어나지 않습니다. 확장은 페이지가 이미 받은 API 응답만 읽어 로컬에서 그래프를 만들고, 레이아웃과 제목만 로컬 스토리지에 저장해요. 서버도, 분석 도구도, 텔레메트리도 없습니다.
-
-유일한 예외는 선택 기능인 Haiku 요약으로, *본인의* 키를 써서 `api.anthropic.com`에만 메시지 텍스트를 보냅니다. 켰을 때만요.
+아무것도 기기를 벗어나지 않습니다. 브라우저가 이미 받은 응답만 읽어 로컬에서 그래프를 만들죠 — 서버도, 분석도, 텔레메트리도 없음. 유일한 예외: Haiku 제목을 켜면 *본인 키*로 `api.anthropic.com`에 메시지 텍스트가 갑니다.
 
 ## 라이선스
 
-[MIT](LICENSE). 마음대로 쓰세요.
+[MIT](LICENSE) — 마음대로 쓰세요.
