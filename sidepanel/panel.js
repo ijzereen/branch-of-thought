@@ -985,9 +985,22 @@ function fitToScreen() {
   applyView();
 }
 
+// Height of the graph area you can actually see — the detail pane, when open,
+// overlays the bottom, so subtract that overlap.
+function visibleGraphHeight(rect) {
+  let h = rect.height;
+  if (els.detail && !els.detail.hidden) {
+    const d = els.detail.getBoundingClientRect();
+    const overlap = rect.bottom - d.top;
+    if (overlap > 0) h = Math.max(120, rect.height - overlap);
+  }
+  return h;
+}
+
 // Initial view after a render: fit to WIDTH at a readable zoom (never shrink to
-// an invisible speck), and anchor vertically to the current/latest message so a
-// long, deep conversation opens where you actually are — not zoomed out to dust.
+// an invisible speck), and center the current/latest message in the visible
+// area — so whatever you just did lands front-and-center, not behind the detail
+// pane or off the bottom of a long, deep conversation.
 function initialView() {
   const size = els.svg.__contentSize;
   if (!size) return;
@@ -996,10 +1009,11 @@ function initialView() {
   view.k = Math.max(0.4, Math.min(1, kx * 0.95)) || 1;
   view.x = -(size.x || 0) * view.k + (rect.width - size.w * view.k) / 2;
 
+  const visH = visibleGraphHeight(rect);
   const leaf = activeLeafUuid && nodePos.get(activeLeafUuid);
   if (leaf) {
-    // place the latest message around 65% down the viewport
-    view.y = rect.height * 0.65 - leaf.y * view.k;
+    // center the latest message in the part of the graph you can see
+    view.y = visH / 2 - leaf.y * view.k;
   } else {
     view.y = -(size.y || 0) * view.k + 20;
   }
