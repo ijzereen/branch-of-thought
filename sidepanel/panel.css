@@ -224,6 +224,11 @@ body {
   border-radius: 10px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
 }
+/* the id selector's display:flex would otherwise beat [hidden]{display:none},
+   leaving the previous chat's body on screen after the graph is cleared */
+#detail[hidden] {
+  display: none;
+}
 
 /* drag bar to resize the pane height */
 #detail-resize {
