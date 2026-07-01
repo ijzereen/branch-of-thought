@@ -202,18 +202,48 @@
   // ---------- patch fetch ----------
   const origFetch = window.fetch;
 
+  // ChatGPT's /backend-api needs a Bearer access token, not just cookies. The
+  // app only GETs a conversation's tree when you *open* an existing chat, so a
+  // brand-new chat is never re-fetched for us to intercept — we have to fetch it
+  // ourselves, which means we need the token. Grab it (cached) from the
+  // same-origin NextAuth session endpoint.
+  let cgptToken = null;
+  async function refetchHeaders() {
+    const h = { accept: "application/json" };
+    if (/chatgpt\.com|openai\.com/.test(HOST)) {
+      if (!cgptToken) {
+        try {
+          const s = await origFetch(location.origin + "/api/auth/session", {
+            credentials: "include",
+          }).then((r) => (r && r.ok ? r.json() : null));
+          if (s && s.accessToken) cgptToken = s.accessToken;
+        } catch (_) {}
+      }
+      if (cgptToken) h.authorization = "Bearer " + cgptToken;
+    }
+    return h;
+  }
+
   // Fetch the tree ourselves and emit it. Retried a few times so a reply that's
   // still streaming gets picked up once it's saved.
-  function fireRefetch(explicitId) {
+  async function fireRefetch(explicitId) {
     const url = treeUrl(explicitId || currentConvId());
     if (!url) return;
-    origFetch(url, { credentials: "include", headers: { accept: "application/json" } })
-      .then((r) => (r && r.ok ? r.json() : null))
-      .then((j) => { if (j) emit(url, j); })
-      .catch(() => {});
+    try {
+      const headers = await refetchHeaders();
+      const r = await origFetch(url, { credentials: "include", headers });
+      if (r && r.ok) {
+        const j = await r.json();
+        if (j) emit(url, j);
+      } else if (r && (r.status === 401 || r.status === 403)) {
+        cgptToken = null; // stale token → refresh on next try
+      }
+    } catch (_) {}
   }
   function scheduleRefetch(explicitId) {
-    [700, 2200, 5000].forEach((d) => setTimeout(() => fireRefetch(explicitId), d));
+    [600, 1500, 3000, 6000].forEach((d) =>
+      setTimeout(() => fireRefetch(explicitId), d)
+    );
   }
 
   window.fetch = function (...args) {
@@ -282,6 +312,20 @@
   };
   window.addEventListener("popstate", onNav);
   setTimeout(onNav, 500); // first load
+
+  // Catch-all: some SPA routers (Next.js on ChatGPT) route without going through
+  // our history monkeypatch, so poll the URL for conversation-id changes too.
+  // Fires a refetch the moment a brand-new chat gets its /c/{id} or /chat/{id}.
+  let lastConvSeen = currentConvId();
+  setInterval(() => {
+    const id = currentConvId();
+    if (id && id !== lastConvSeen) {
+      lastConvSeen = id;
+      scheduleRefetch(id);
+    } else if (!id && lastConvSeen) {
+      lastConvSeen = null;
+    }
+  }, 800);
 
   console.debug("[Branch of Thought] interceptor installed on", HOST);
 })();
