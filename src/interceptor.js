@@ -56,11 +56,20 @@
       if (!m || !m.author) continue;
       const role = m.author.role;
       if (role !== "user" && role !== "assistant") continue; // skip system/tool
+      const meta = m.metadata || {};
+      if (meta.is_visually_hidden_from_conversation) continue; // hidden helpers
+      if (m.recipient && m.recipient !== "all") continue; // tool-call routes
       const c = m.content || {};
+      // Skip non-answer content: reasoning ("thoughts"), reasoning_recap, tool
+      // code/output, etc. Only plain visible text is a real graph node.
+      const ctype = c.content_type;
+      if (ctype && ctype !== "text" && ctype !== "multimodal_text") continue;
       let text = "";
       if (Array.isArray(c.parts))
         text = c.parts.filter((p) => typeof p === "string").join("\n").trim();
       else if (typeof c.text === "string") text = c.text.trim();
+      // an assistant node with no visible text is a thinking/placeholder step
+      if (role === "assistant" && !text) continue;
       included.set(id, { rawParent: node.parent, role, text, ct: m.create_time });
     }
     if (included.size === 0) return null;
