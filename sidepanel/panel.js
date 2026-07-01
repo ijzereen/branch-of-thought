@@ -307,6 +307,34 @@ async function init() {
   await switchToTab(tab ? tab.id : null);
 }
 
+// Which conversation, if any, a tab's URL is showing.
+//   returns a conv id string  → viewing that conversation
+//   returns null              → a known chat host but NOT a conversation
+//                               (home / new chat / recents / settings)
+//   returns undefined         → unknown host, or a share view → don't force-clear
+function convIdFromUrl(url) {
+  try {
+    const u = new URL(url);
+    const h = u.hostname;
+    const p = u.pathname;
+    if (/(^|\.)claude\.ai$/.test(h)) {
+      const m = /^\/chat\/([0-9a-f-]{6,})/i.exec(p);
+      if (m) return m[1];
+      if (/^\/share\//.test(p)) return undefined; // shared conversation view
+      return null; // home / new / recents / projects / settings
+    }
+    if (/(^|\.)chatgpt\.com$/.test(h) || /(^|\.)openai\.com$/.test(h)) {
+      const m = /\/c\/([0-9a-f-]{6,})/i.exec(p);
+      if (m) return m[1];
+      if (/^\/share\//.test(p)) return undefined;
+      return null; // home / new chat / GPT landing
+    }
+    return undefined; // some other site
+  } catch (_) {
+    return undefined;
+  }
+}
+
 // Point the panel at a tab and load whatever tree we have cached for it.
 async function switchToTab(tabId) {
   currentTabId = tabId;
@@ -315,12 +343,36 @@ async function switchToTab(tabId) {
     showEmpty();
     return;
   }
+
+  let tabUrl = "";
+  try {
+    const tb = await chrome.tabs.get(tabId);
+    tabUrl = (tb && tb.url) || "";
+  } catch (_) {}
+  const convId = convIdFromUrl(tabUrl);
+
+  // On a chat home / new-chat page there is no conversation yet — starting to
+  // type is a fresh start, so don't drag in the previous chat's graph.
+  if (convId === null) {
+    showEmpty();
+    return;
+  }
+
   const cached = await chrome.runtime.sendMessage({
     type: "GET_LATEST",
     tabId,
   });
-  if (cached && cached.conversation) scheduleRender(cached.conversation);
-  else showEmpty();
+  // Only show a cached graph that actually belongs to the conversation now on
+  // screen (avoids flashing the old graph when a new chat is opened).
+  if (
+    cached &&
+    cached.conversation &&
+    (convId === undefined || cached.conversation.uuid === convId)
+  ) {
+    scheduleRender(cached.conversation);
+  } else {
+    showEmpty();
+  }
 }
 
 function showEmpty() {
@@ -338,9 +390,11 @@ chrome.tabs.onActivated.addListener(({ tabId }) => {
   switchToTab(tabId);
 });
 
-// Same-tab full navigation to another conversation.
+// Same-tab navigation — full reloads (status) and in-app SPA route changes
+// (changeInfo.url, e.g. leaving a chat for the home / new-chat page).
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (tabId === currentTabId && changeInfo.status === "complete") {
+  if (tabId !== currentTabId) return;
+  if (changeInfo.status === "complete" || changeInfo.url) {
     switchToTab(tabId);
   }
 });
