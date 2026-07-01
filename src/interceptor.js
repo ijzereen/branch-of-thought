@@ -163,14 +163,70 @@
     );
   }
 
+  // ---------- proactive tree fetch ----------
+  // A brand-new chat streams its reply but never GETs the tree, so there's
+  // nothing for us to intercept. We watch for sends / navigation and fetch the
+  // tree ourselves.
+  let orgId = null;
+  function noteOrg(url) {
+    const m = /\/api\/organizations\/([0-9a-f-]{6,})/i.exec(url || "");
+    if (m) orgId = m[1];
+  }
+  function currentConvId() {
+    if (/claude\.ai/.test(HOST)) {
+      const m = /\/chat\/([0-9a-f-]{6,})/i.exec(location.pathname);
+      return m ? m[1] : null;
+    }
+    if (/chatgpt\.com|openai\.com/.test(HOST)) {
+      const m = /\/c\/([0-9a-f-]{6,})/i.exec(location.pathname);
+      return m ? m[1] : null;
+    }
+    return null;
+  }
+  function treeUrl(convId) {
+    if (!convId) return null;
+    if (/claude\.ai/.test(HOST)) {
+      if (!orgId) return null;
+      return (
+        location.origin +
+        "/api/organizations/" + orgId + "/chat_conversations/" + convId +
+        "?tree=True&rendering_mode=messages&render_all_tools=false"
+      );
+    }
+    if (/chatgpt\.com|openai\.com/.test(HOST)) {
+      return location.origin + "/backend-api/conversation/" + convId;
+    }
+    return null;
+  }
+
   // ---------- patch fetch ----------
   const origFetch = window.fetch;
+
+  // Fetch the tree ourselves and emit it. Retried a few times so a reply that's
+  // still streaming gets picked up once it's saved.
+  function fireRefetch(explicitId) {
+    const url = treeUrl(explicitId || currentConvId());
+    if (!url) return;
+    origFetch(url, { credentials: "include", headers: { accept: "application/json" } })
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((j) => { if (j) emit(url, j); })
+      .catch(() => {});
+  }
+  function scheduleRefetch(explicitId) {
+    [700, 2200, 5000].forEach((d) => setTimeout(() => fireRefetch(explicitId), d));
+  }
+
   window.fetch = function (...args) {
     const p = origFetch.apply(this, args);
     p.then((res) => {
       try {
         const url =
           (args[0] && args[0].url) || (typeof args[0] === "string" ? args[0] : res.url);
+        noteOrg(url);
+        // a message was just sent → pull the fresh tree
+        const claudeSend = /chat_conversations\/([0-9a-f-]+)\/completion/.exec(url || "");
+        if (claudeSend) scheduleRefetch(claudeSend[1]);
+        else if (/\/backend-api\/(f\/)?conversation$/.test(url || "")) scheduleRefetch();
         if (!isConvUrl(url)) return;
         const ct = (res.headers && res.headers.get && res.headers.get("content-type")) || "";
         if (!/json/i.test(ct)) return;
@@ -195,6 +251,7 @@
     this.addEventListener("load", () => {
       try {
         const url = this.__cg_url || "";
+        noteOrg(url);
         if (!isConvUrl(url)) return;
         const rt = this.responseType;
         if (rt !== "" && rt !== "text") return;
@@ -206,6 +263,25 @@
     });
     return origSend.apply(this, args);
   };
+
+  // React to SPA navigation (opening or creating a conversation).
+  function onNav() {
+    scheduleRefetch();
+  }
+  const hp = history.pushState;
+  const hr = history.replaceState;
+  history.pushState = function (...a) {
+    const r = hp.apply(this, a);
+    setTimeout(onNav, 0);
+    return r;
+  };
+  history.replaceState = function (...a) {
+    const r = hr.apply(this, a);
+    setTimeout(onNav, 0);
+    return r;
+  };
+  window.addEventListener("popstate", onNav);
+  setTimeout(onNav, 500); // first load
 
   console.debug("[Branch of Thought] interceptor installed on", HOST);
 })();

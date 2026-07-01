@@ -40,34 +40,35 @@
     </style>
   </head>
   <body>
-    <h1>Branch of Thought 설정</h1>
+    <h1>Branch of Thought — Settings</h1>
     <p class="hint">
-      노드 제목을 Haiku로 요약하려면 Anthropic API 키가 필요합니다. 키와 요약 결과는
-      이 브라우저에만 저장되며 외부로 전송되지 않습니다(요약 호출은 api.anthropic.com으로만 갑니다).
-      키가 없으면 제목은 자동으로 원문을 잘라서 표시합니다.
+      Summarizing node titles with Haiku needs an Anthropic API key. The key and
+      the summaries are stored only in this browser and never sent anywhere else
+      (summary calls go to api.anthropic.com only). Without a key, titles just
+      fall back to trimmed message text.
     </p>
 
-    <label for="key">Anthropic API 키</label>
+    <label for="key">Anthropic API key</label>
     <input id="key" type="password" placeholder="sk-ant-..." autocomplete="off" />
     <p class="hint">
+      Get one at
       <a href="https://console.anthropic.com/settings/keys" target="_blank"
         >console.anthropic.com</a
-      >
-      에서 발급.
+      >.
     </p>
 
-    <label for="model">요약 모델</label>
+    <label for="model">Summary model</label>
     <select id="model">
-      <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (권장·저렴)</option>
+      <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (recommended · cheap)</option>
       <option value="claude-sonnet-5">Claude Sonnet 5</option>
     </select>
 
     <label>
-      <input id="enabled" type="checkbox" style="width:auto" /> 요약 사용
+      <input id="enabled" type="checkbox" style="width:auto" /> Enable summaries
     </label>
 
     <div>
-      <button id="save">저장</button>
+      <button id="save">Save</button>
       <span id="status"></span>
     </div>
 

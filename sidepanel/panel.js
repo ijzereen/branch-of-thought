@@ -39,6 +39,87 @@ let currentPlatform = "claude"; // claude | chatgpt | gemini
 function assistantName(p) {
   return p === "chatgpt" ? "ChatGPT" : p === "gemini" ? "Gemini" : "Claude";
 }
+
+// ---------- i18n (default English, toggle to Korean) ----------
+const I18N = {
+  en: {
+    emptyTitle: "Waiting for a conversation…",
+    emptyBody:
+      "Open or refresh a chat in <b>Claude</b> or <b>ChatGPT</b>, and the branch graph shows up here.",
+    emptyHint: "Every edit starts a new branch; your current path is highlighted.",
+    fit: "Fit to screen",
+    reset: "Reset layout",
+    exportT: "Export",
+    settings: "Settings",
+    resize: "Drag to resize",
+    maximize: "Bigger / smaller",
+    stats: (m, b) => `${m} messages · ${b} branches`,
+    me: "You",
+    question: "Question",
+    prevAnswer: (n) => `Previous answer (${n})`,
+    emptyMsg: "(empty message)",
+    emptyQ: "(no content)",
+    toggle: "한국어",
+    renderErr: "Render error: ",
+    resetDone: "Layout reset to auto.",
+    nothingToExport: "Nothing to export.",
+    pngFail: "PNG export failed.",
+  },
+  ko: {
+    emptyTitle: "대화 트리를 기다리는 중…",
+    emptyBody:
+      "<b>Claude</b> 또는 <b>ChatGPT</b> 탭에서 대화를 열거나 새로고침하면 여기에 브랜치 그래프가 나타납니다.",
+    emptyHint: "메시지를 편집할 때마다 새 가지가 생기고, 현재 경로가 강조됩니다.",
+    fit: "화면에 맞추기",
+    reset: "레이아웃 초기화",
+    exportT: "내보내기",
+    settings: "설정",
+    resize: "드래그해서 크기 조절",
+    maximize: "크게 / 작게",
+    stats: (m, b) => `메시지 ${m}개 · 분기 ${b}곳`,
+    me: "나",
+    question: "질문",
+    prevAnswer: (n) => `이전 답변 (${n})`,
+    emptyMsg: "(빈 메시지)",
+    emptyQ: "(내용 없음)",
+    toggle: "English",
+    renderErr: "그래프 렌더 오류: ",
+    resetDone: "레이아웃을 자동 배치로 되돌렸어요.",
+    nothingToExport: "내보낼 그래프가 없어요.",
+    pngFail: "PNG 내보내기에 실패했어요.",
+  },
+};
+let lang = "en";
+function t(k) {
+  return I18N[lang][k];
+}
+let lastCounts = null; // { count, branch } for re-rendering stats on lang switch
+let selectedNode = null; // for re-rendering the detail pane on lang switch
+
+function applyLang() {
+  els.empty.innerHTML =
+    `<p><b>${t("emptyTitle")}</b></p>` +
+    `<p>${t("emptyBody")}</p>` +
+    `<p class="hint">${t("emptyHint")}</p>`;
+  els.fit.title = t("fit");
+  document.getElementById("reset").title = t("reset");
+  document.getElementById("export-btn").title = t("exportT");
+  document.getElementById("settings").title = t("settings");
+  const rz = document.getElementById("detail-resize");
+  if (rz) rz.title = t("resize");
+  const mx = document.getElementById("detail-max");
+  if (mx) mx.title = t("maximize");
+  const lb = document.getElementById("lang");
+  if (lb) lb.textContent = t("toggle");
+  if (lastCounts) els.stats.textContent = t("stats")(lastCounts.count, lastCounts.branch);
+  if (selectedNode) renderDetail(selectedNode);
+}
+
+async function setLang(next) {
+  lang = next === "ko" ? "ko" : "en";
+  await chrome.storage.local.set({ lang });
+  applyLang();
+}
 let gEdgesRef = null;
 let gNodesRef = null;
 let draggingNode = null;
@@ -215,6 +296,13 @@ function sizeChip(chip) {
 // ---------- data plumbing ----------
 
 async function init() {
+  const cfg = await chrome.storage.local.get("lang");
+  lang = cfg.lang === "ko" ? "ko" : "en";
+  applyLang();
+  document.getElementById("lang").addEventListener("click", () => {
+    setLang(lang === "en" ? "ko" : "en");
+  });
+
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   await switchToTab(tab ? tab.id : null);
 }
@@ -285,7 +373,7 @@ function scheduleRender(conv) {
       .then(() => render(pendingConv))
       .catch((e) => {
         console.error("[Branch of Thought] render failed:", e);
-        toast("그래프 렌더 중 오류: " + (e && e.message ? e.message : e));
+        toast(t("renderErr") + (e && e.message ? e.message : e));
       });
   }, 120);
 }
@@ -567,7 +655,8 @@ async function render(conv) {
 
   activeLeafUuid = conv.current_leaf_message_uuid || null;
 
-  els.stats.textContent = `메시지 ${count}개 · 분기 ${branchCount}곳`;
+  lastCounts = { count, branch: branchCount };
+  els.stats.textContent = t("stats")(count, branchCount);
   applyView();
   initialView();
 
@@ -750,15 +839,23 @@ function selectNode(node) {
   // + itself + one branch down to a leaf. Everything else dims.
   applyActivePath(computeLineage(node));
 
+  renderDetail(node);
+  jumpToMessage(node);
+}
+
+// Fill the detail pane for a node (also re-run on language switch).
+function renderDetail(node) {
+  selectedNode = node;
   els.detail.hidden = false;
   els.detailSender.textContent =
-    node.sender === "human" ? "나" : assistantName(currentPlatform);
+    node.sender === "human" ? t("me") : assistantName(currentPlatform);
   els.detailSender.className = "badge " + node.sender;
   els.detailTime.textContent = node.createdAt
     ? new Date(node.createdAt).toLocaleString()
     : "";
-  // Always show the parent turn for context: clicking Claude's answer shows the
-  // question above it; clicking my question shows the previous Claude answer.
+
+  // Always show the parent turn for context: clicking an answer shows the
+  // question above it; clicking a question shows the previous answer.
   const parent = node.__parentRef;
   if (
     parent &&
@@ -769,11 +866,11 @@ function selectNode(node) {
     els.detailQuestion.className = parent.sender;
     els.detailQuestionLabel.textContent =
       parent.sender === "human"
-        ? "질문"
-        : "이전 답변 (" + assistantName(currentPlatform) + ")";
+        ? t("question")
+        : t("prevAnswer")(assistantName(currentPlatform));
     els.detailQuestionText.innerHTML = parent.text
       ? mdToHtml(parent.text)
-      : "<em>(내용 없음)</em>";
+      : `<em>${t("emptyQ")}</em>`;
   } else {
     els.detailQuestion.hidden = true;
     els.detailQuestionText.innerHTML = "";
@@ -781,9 +878,7 @@ function selectNode(node) {
 
   els.detailText.innerHTML = node.text
     ? mdToHtml(node.text)
-    : "<em>(빈 메시지)</em>";
-
-  jumpToMessage(node);
+    : `<em>${t("emptyMsg")}</em>`;
 }
 
 // Best-effort: ask the page to scroll to this message. Silent on failure —
@@ -956,7 +1051,7 @@ async function resetLayout() {
   posOverride = new Map();
   await savePositions();
   if (lastConversation) render(lastConversation);
-  toast("레이아웃을 자동 배치로 되돌렸어요.");
+  toast(t("resetDone"));
 }
 document.getElementById("reset").addEventListener("click", resetLayout);
 
@@ -1024,14 +1119,14 @@ function fileBase() {
 }
 
 function exportSVG() {
-  if (!nodePos.size) return toast("내보낼 그래프가 없어요.");
+  if (!nodePos.size) return toast(t("nothingToExport"));
   const { svg } = buildExportSVG();
   const str = new XMLSerializer().serializeToString(svg);
   download(fileBase() + ".svg", new Blob([str], { type: "image/svg+xml" }));
 }
 
 function exportPNG() {
-  if (!nodePos.size) return toast("내보낼 그래프가 없어요.");
+  if (!nodePos.size) return toast(t("nothingToExport"));
   const { svg, bounds } = buildExportSVG();
   const str = new XMLSerializer().serializeToString(svg);
   const blob = new Blob([str], { type: "image/svg+xml;charset=utf-8" });
@@ -1048,12 +1143,12 @@ function exportPNG() {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     canvas.toBlob((bl) => {
       if (bl) download(fileBase() + ".png", bl);
-      else toast("PNG 변환에 실패했어요.");
+      else toast(t("pngFail"));
       URL.revokeObjectURL(url);
     }, "image/png");
   };
   img.onerror = () => {
-    toast("PNG 내보내기에 실패했어요.");
+    toast(t("pngFail"));
     URL.revokeObjectURL(url);
   };
   img.src = url;
@@ -1091,7 +1186,20 @@ function snapshot() {
     c: e.childUuid,
     active: e.active,
   }));
-  return { nodes, edges, id: (convUuid || "").slice(0, 8), platform: currentPlatform };
+  return {
+    nodes,
+    edges,
+    id: (convUuid || "").slice(0, 8),
+    platform: currentPlatform,
+    labels: {
+      me: t("me"),
+      question: t("question"),
+      prevAnswer: t("prevAnswer")(assistantName(currentPlatform)),
+      emptyMsg: t("emptyMsg"),
+      emptyQ: t("emptyQ"),
+      meta: t("stats")(nodes.length, nodes.filter((n) => n.branch).length),
+    },
+  };
 }
 
 function buildHTMLDoc() {
@@ -1147,9 +1255,9 @@ function buildHTMLDoc() {
 </style>
 </head>
 <body>
-<div id="bar"><b>Branch of Thought</b> <span class="m" id="meta"></span><button id="fit">⤢ 맞춤</button></div>
+<div id="bar"><b>Branch of Thought</b> <span class="m" id="meta"></span><button id="fit">⤢</button></div>
 <div id="wrap"><svg id="g" xmlns="http://www.w3.org/2000/svg"></svg></div>
-<div id="detail"><div class="h"><span class="badge" id="dsender"></span><span class="t" id="dtime"></span><button id="dclose">✕</button></div><div id="dquestion" hidden><div class="ql" id="dql">질문</div><div id="dqtext" class="md"></div></div><div id="dtext" class="md"></div>
+<div id="detail"><div class="h"><span class="badge" id="dsender"></span><span class="t" id="dtime"></span><button id="dclose">✕</button></div><div id="dquestion" hidden><div class="ql" id="dql"></div><div id="dqtext" class="md"></div></div><div id="dtext" class="md"></div>
 <script>
 const DATA=${json};
 ${mdToHtml.toString()}
@@ -1168,9 +1276,10 @@ if(n.active){const o=chip(n.label,false);g.appendChild(o.gl);n.__chip=o;}
 else{g.addEventListener("mouseenter",()=>{if(g.querySelector("g.label"))return;const o=chip(n.label,true);g.appendChild(o.gl);sizeChip(o);gN.appendChild(g);});g.addEventListener("mouseleave",()=>{const l=g.querySelector("g.label");if(l)l.remove();});}
 g.addEventListener("click",ev=>{ev.stopPropagation();showDetail(n);});gN.appendChild(g);if(n.__chip)sizeChip(n.__chip);});
 var AINAME=DATA.platform==="chatgpt"?"ChatGPT":DATA.platform==="gemini"?"Gemini":"Claude";
-function showDetail(n){document.getElementById("detail").style.display="block";const s=document.getElementById("dsender");s.textContent=n.sender==="human"?"나":AINAME;s.className="badge "+n.sender;const q=document.getElementById("dquestion");const par=n.parent?pos[n.parent]:null;if(par&&(par.sender==="human"||par.sender==="assistant")){q.hidden=false;q.className=par.sender;document.getElementById("dql").textContent=par.sender==="human"?"질문":"이전 답변 ("+AINAME+")";document.getElementById("dqtext").innerHTML=par.text?mdToHtml(par.text):"<em>(내용 없음)</em>";}else{q.hidden=true;}document.getElementById("dtext").innerHTML=n.text?mdToHtml(n.text):"<em>(빈 메시지)</em>";}
+var L=DATA.labels||{me:"You",question:"Question",prevAnswer:"Previous answer",emptyMsg:"(empty message)",emptyQ:"(no content)"};
+function showDetail(n){document.getElementById("detail").style.display="block";const s=document.getElementById("dsender");s.textContent=n.sender==="human"?L.me:AINAME;s.className="badge "+n.sender;const q=document.getElementById("dquestion");const par=n.parent?pos[n.parent]:null;if(par&&(par.sender==="human"||par.sender==="assistant")){q.hidden=false;q.className=par.sender;document.getElementById("dql").textContent=par.sender==="human"?L.question:L.prevAnswer;document.getElementById("dqtext").innerHTML=par.text?mdToHtml(par.text):"<em>"+L.emptyQ+"</em>";}else{q.hidden=true;}document.getElementById("dtext").innerHTML=n.text?mdToHtml(n.text):"<em>"+L.emptyMsg+"</em>";}
 document.getElementById("dclose").onclick=()=>document.getElementById("detail").style.display="none";
-document.getElementById("meta").textContent="메시지 "+DATA.nodes.length+"개 · 분기 "+DATA.nodes.filter(n=>n.branch).length+"곳";
+document.getElementById("meta").textContent=(DATA.labels&&DATA.labels.meta)||(DATA.nodes.length+" nodes");
 let view={x:0,y:0,k:1};function apply(){gRoot.setAttribute("transform","translate("+view.x+","+view.y+") scale("+view.k+")");}
 function bounds(){let a=1e9,b=1e9,c=-1e9,d=-1e9;DATA.nodes.forEach(n=>{a=Math.min(a,n.x);b=Math.min(b,n.y);c=Math.max(c,n.x);d=Math.max(d,n.y);});if(a>1e8)return{x:0,y:0,w:200,h:200};const P=60;return{x:a-P,y:b-P,w:c-a+P+180,h:d-b+P*2};}
 function fit(){const B=bounds();const r=document.getElementById("wrap").getBoundingClientRect();view.k=Math.min(1,Math.min(r.width/B.w,r.height/B.h)*.9)||1;view.x=-B.x*view.k+(r.width-B.w*view.k)/2;view.y=-B.y*view.k+20;apply();}
@@ -1187,7 +1296,7 @@ fit();
 }
 
 function exportHTML() {
-  if (!nodePos.size) return toast("내보낼 그래프가 없어요.");
+  if (!nodePos.size) return toast(t("nothingToExport"));
   const doc = buildHTMLDoc();
   download(fileBase() + ".html", new Blob([doc], { type: "text/html" }));
 }

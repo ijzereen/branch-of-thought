@@ -13,28 +13,28 @@
         Branch of Thought
       </div>
       <div class="stats" id="stats"></div>
-      <button id="fit" title="화면에 맞추기">⤢</button>
-      <button id="reset" title="레이아웃 초기화 (자동 배치로)">↺</button>
+      <button id="fit" title="Fit to screen">⤢</button>
+      <button id="reset" title="Reset layout">↺</button>
       <div class="menu">
-        <button id="export-btn" title="내보내기">⤓</button>
+        <button id="export-btn" title="Export">⤓</button>
         <div class="menu-list" id="export-menu" hidden>
-          <button id="export-html">HTML (인터랙티브)</button>
-          <button id="export-png">PNG 이미지</button>
-          <button id="export-svg">SVG 벡터</button>
+          <button id="export-html">HTML (interactive)</button>
+          <button id="export-png">PNG</button>
+          <button id="export-svg">SVG</button>
         </div>
       </div>
-      <button id="settings" title="설정 (API 키)">⚙︎</button>
+      <button id="lang" title="Language">한국어</button>
+      <button id="settings" title="Settings">⚙︎</button>
     </header>
 
     <div id="empty" class="empty">
-      <p><b>대화 트리를 기다리는 중…</b></p>
+      <p><b>Waiting for a conversation…</b></p>
       <p>
-        <b>Claude</b> 또는 <b>ChatGPT</b> 탭에서 대화를 열거나 새로고침(⌘R)하면
-        여기에 브랜치 그래프가 나타납니다.
+        Open or refresh a chat in <b>Claude</b> or <b>ChatGPT</b>, and the branch
+        graph shows up here.
       </p>
       <p class="hint">
-        메시지를 편집할 때마다 새 가지가 생기고, 현재 활성 경로가 굵게 강조됩니다.
-        (Gemini는 API 구조상 아직 미지원)
+        Every edit starts a new branch; your current path is highlighted.
       </p>
     </div>
 

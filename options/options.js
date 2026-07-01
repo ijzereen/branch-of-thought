@@ -23,7 +23,7 @@ els.save.addEventListener("click", async () => {
     summaryModel: els.model.value,
     summaryEnabled: els.enabled.checked,
   });
-  els.status.textContent = "저장됨 ✓";
+  els.status.textContent = "Saved ✓";
   setTimeout(() => (els.status.textContent = ""), 1500);
 });
 
